@@ -122,6 +122,73 @@ function momoyo_scripts() {
 		wp_enqueue_script( 'comment-reply' );
 	}
 }
+// Code Category
+add_action('woocommerce_single_product_summary','get_calories_of_products',10);
+function get_calories_of_products(){
+	global $product;
+	?>
+	<div class="product_calories">
+		<h3><?=__('Hàm Lượng Calories: ', 'momoyo')?>
+			<span><?=get_field('product_calories',$product->get_id())?></span>
+		</h3>
+	</div>
+	<?php
+}
+add_action('woocommerce_cart_coupon','total_calories_of_order',10);
+function total_calories_of_order(){
+	global $woocommerce;
+    $items 				= $woocommerce->cart->get_cart();
+    $totalCalories 		= 0;
+    foreach($items as $item => $values) {
+    	$productID 		= $values['data']->get_id();
+    	$quantity  		= $values['quantity'];
+    	$calories  		= get_field('product_calories',$productID);
+    	$totalCalories += $calories*$quantity;
+    }
+    ?>
+   	<div class="cart_calories_total">
+		<b><?=__('Hàm Lượng Calories:', 'momoyo')?></b>
+		<span><?=$totalCalories?></span>
+	</div>
+	<?php
+}
+function search_filter_by_product($query) {
+    if ($query->is_search && !is_admin() ) {
+        $query->set('post_type',array('product'));
+    }
+return $query;
+}
+add_filter('pre_get_posts','search_filter_by_product');
+
+function __search_by_title_only( $search, $wp_query )
+{
+    global $wpdb;
+ 
+    if ( empty( $search ) )
+        return $search; // skip processing - no search term in query
+ 
+    $q = $wp_query->query_vars;    
+    $n = ! empty( $q['exact'] ) ? '' : '%';
+ 
+    $search =
+    $searchand = '';
+ 
+    foreach ( (array) $q['search_terms'] as $term ) {
+        $term = esc_sql( like_escape( $term ) );
+        $search .= "{$searchand}($wpdb->posts.post_title LIKE '{$n}{$term}{$n}')";
+        $searchand = ' AND ';
+    }
+ 
+    if ( ! empty( $search ) ) {
+        $search = " AND ({$search}) ";
+        if ( ! is_user_logged_in() )
+            $search .= " AND ($wpdb->posts.post_password = '') ";
+    }
+ 
+    return $search;
+}
+add_filter( 'posts_search', '__search_by_title_only', 500, 2 );
+
 add_action( 'wp_enqueue_scripts', 'momoyo_scripts' );
 
 
